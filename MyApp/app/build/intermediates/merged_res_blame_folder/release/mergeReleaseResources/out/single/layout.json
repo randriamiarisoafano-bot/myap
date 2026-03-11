@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.example.myapp-mergeReleaseResources-46:/layout/activity_main.xml",
+        "source": "com.example.myapp-main-48:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/user/.gradle/daemon/8.7/com.example.myapp-mergeReleaseResources-46:/layout/activity_main.xml",
+        "source": "/home/user/.gradle/daemon/8.7/com.example.myapp-main-48:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/home/user/.gradle/daemon/8.7/com.example.myapp-mergeReleaseResources-46:/layout/overlay_layout.xml",
+        "source": "/home/user/.gradle/daemon/8.7/com.example.myapp-main-48:/layout/overlay_layout.xml"
+    }
+]

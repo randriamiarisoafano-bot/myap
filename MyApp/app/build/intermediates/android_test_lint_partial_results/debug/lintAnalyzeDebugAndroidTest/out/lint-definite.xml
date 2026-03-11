@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.5.1" type="incidents">
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.core:core-ktx than 1.13.0 is available: 1.17.0">
+        <fix-replace
+            description="Change to 1.17.0"
+            family="Update versions"
+            oldString="1.13.0"
+            replacement="1.17.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="4"
+            column="11"
+            startOffset="52"
+            endLine="4"
+            endColumn="19"
+            endOffset="60"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.4 is available: 2.10.0">
+        <fix-replace
+            description="Change to 2.10.0"
+            family="Update versions"
+            oldString="2.8.4"
+            replacement="2.10.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="8"
+            column="23"
+            startOffset="146"
+            endLine="8"
+            endColumn="30"
+            endOffset="153"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.activity:activity-compose than 1.9.1 is available: 1.12.4">
+        <fix-replace
+            description="Change to 1.12.4"
+            family="Update versions"
+            oldString="1.9.1"
+            replacement="1.12.4"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="9"
+            column="19"
+            startOffset="172"
+            endLine="9"
+            endColumn="26"
+            endOffset="179"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.compose:compose-bom than 2024.04.01 is available: 2026.02.01">
+        <fix-replace
+            description="Change to 2026.02.01"
+            family="Update versions"
+            oldString="2024.04.01"
+            replacement="2026.02.01"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="10"
+            column="14"
+            startOffset="193"
+            endLine="10"
+            endColumn="26"
+            endOffset="205"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1">
+        <fix-replace
+            description="Change to 1.7.1"
+            family="Update versions"
+            oldString="1.6.1"
+            replacement="1.7.1"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="11"
+            column="13"
+            startOffset="218"
+            endLine="11"
+            endColumn="20"
+            endOffset="225"/>
+    </incident>
+
+    <incident
+        id="AndroidGradlePluginVersion"
+        severity="warning"
+        message="A newer version of com.android.application than 8.5.1 is available: 9.1.0. (There is also a newer version of 8.5.𝑥 available, if upgrading to 9.1.0 is difficult: 8.5.2)">
+        <fix-alternatives>
+            <fix-replace
+                description="Change to 9.1.0"
+                family="Update versions"
+                oldString="8.5.1"
+                replacement="9.1.0"
+                priority="0"/>
+            <fix-replace
+                description="Change to 8.5.2"
+                family="Update versions"
+                robot="true"
+                independent="true"
+                oldString="8.5.1"
+                replacement="8.5.2"
+                priority="0"/>
+        </fix-alternatives>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="2"
+            column="7"
+            startOffset="17"
+            endLine="2"
+            endColumn="14"
+            endOffset="24"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of org.jetbrains.kotlin.android than 1.9.0 is available: 2.1.0">
+        <fix-replace
+            description="Change to 2.1.0"
+            family="Update versions"
+            oldString="1.9.0"
+            replacement="2.1.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="3"
+            column="10"
+            startOffset="34"
+            endLine="3"
+            endColumn="17"
+            endOffset="41"/>
+    </incident>
+
+</incidents>

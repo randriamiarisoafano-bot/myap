@@ -1,20 +1,27 @@
-
 package com.example.myapp
 
 import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.*
 import android.widget.Button
 import androidx.core.app.NotificationCompat
@@ -29,7 +36,7 @@ import java.util.*
 class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var overlayView: View
+    private lateinit var overlayView: ViewGroup
     private lateinit var captureZone: View
     private lateinit var startStopButton: Button
 
@@ -39,6 +46,17 @@ class OverlayService : Service() {
     private lateinit var mediaProjectionManager: MediaProjectionManager
 
     private var isCapturing = false
+    private val captureHandler = Handler(Looper.getMainLooper())
+    private var lastCapturedValue: String? = null
+
+    private val captureRunnable = object : Runnable {
+        override fun run() {
+            if (isCapturing) {
+                captureScreen()
+                captureHandler.postDelayed(this, 200)
+            }
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -47,18 +65,36 @@ class OverlayService : Service() {
     override fun onCreate() {
         super.onCreate()
         mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        createNotificationChannel()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "STOP") {
+        if (intent == null) {
+            return START_NOT_STICKY
+        }
+        if (intent.action == "STOP") {
             stopSelf()
             return START_NOT_STICKY
         }
-        
-        if (intent != null) {
-            mediaProjection = mediaProjectionManager.getMediaProjection(intent.getIntExtra("resultCode", 0), intent.getParcelableExtra("data")!!)
+
+        val resultCode = intent.getIntExtra("resultCode", 0)
+        val data: Intent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("data", Intent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("data")
         }
+
+        if (data != null) {
+            mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
+        }
+
+        if (mediaProjection == null) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
 
         startForeground(1, NotificationCompat.Builder(this, "overlay_channel")
             .setContentTitle("Overlay Service")
@@ -67,13 +103,18 @@ class OverlayService : Service() {
             .build())
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_layout, null)
+        val inflater = LayoutInflater.from(this)
+        overlayView = inflater.inflate(R.layout.overlay_layout, null) as ViewGroup
         captureZone = overlayView.findViewById(R.id.capture_zone)
         startStopButton = overlayView.findViewById(R.id.start_stop_button)
 
+        val metrics = Resources.getSystem().displayMetrics
+        val threeCmInPixels = (3 * metrics.xdpi / 2.54).toInt()
+        val oneCmInPixels = (metrics.xdpi / 2.54).toInt()
+
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            threeCmInPixels,
+            oneCmInPixels,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
@@ -88,7 +129,7 @@ class OverlayService : Service() {
             private var initialTouchY = 0f
 
             override fun onDown(e: MotionEvent): Boolean {
-                val initialParams = captureZone.layoutParams as WindowManager.LayoutParams
+                val initialParams = overlayView.layoutParams as WindowManager.LayoutParams
                 initialX = initialParams.x
                 initialY = initialParams.y
                 initialTouchX = e.rawX
@@ -96,16 +137,16 @@ class OverlayService : Service() {
                 return true
             }
 
-            override fun onScroll(e1: MotionEvent, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                val newParams = captureZone.layoutParams as WindowManager.LayoutParams
+            override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+                val newParams = overlayView.layoutParams as WindowManager.LayoutParams
                 newParams.x = initialX + (e2.rawX - initialTouchX).toInt()
                 newParams.y = initialY + (e2.rawY - initialTouchY).toInt()
-                windowManager.updateViewLayout(captureZone, newParams)
+                windowManager.updateViewLayout(overlayView, newParams)
                 return true
             }
         })
 
-        captureZone.setOnTouchListener { _, event ->
+        overlayView.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             true
         }
@@ -118,28 +159,36 @@ class OverlayService : Service() {
             }
         }
 
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun startCapture() {
         isCapturing = true
         startStopButton.text = "STOP"
         setupVirtualDisplay()
+        captureHandler.post(captureRunnable)
     }
 
     private fun stopCapture() {
         isCapturing = false
         startStopButton.text = "START"
+        captureHandler.removeCallbacks(captureRunnable)
         virtualDisplay?.release()
         virtualDisplay = null
     }
 
     private fun setupVirtualDisplay() {
-        val metrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(metrics)
-        val screenDensity = metrics.densityDpi
-        val screenWidth = metrics.widthPixels
-        val screenHeight = metrics.heightPixels
+        val metrics = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            windowManager.currentWindowMetrics.bounds
+        } else {
+            val displayMetrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getMetrics(displayMetrics)
+            Rect(0, 0, displayMetrics.widthPixels, displayMetrics.heightPixels)
+        }
+        val screenWidth = metrics.width()
+        val screenHeight = metrics.height()
+        val screenDensity = resources.displayMetrics.densityDpi
 
         imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 2)
         virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -152,12 +201,11 @@ class OverlayService : Service() {
             null,
             null
         )
+    }
 
-        imageReader.setOnImageAvailableListener({ reader ->
-            val image = reader.acquireLatestImage() ?: return@setOnImageAvailableListener
-            processImage(image)
-            image.close()
-        }, null)
+    private fun captureScreen() {
+        val image = imageReader.acquireLatestImage() ?: return
+        processImage(image)
     }
 
     private fun processImage(image: Image) {
@@ -172,9 +220,19 @@ class OverlayService : Service() {
             Bitmap.Config.ARGB_8888
         )
         bitmap.copyPixelsFromBuffer(buffer)
+        image.close()
 
         val captureRect = Rect()
         captureZone.getGlobalVisibleRect(captureRect)
+
+        // Ensure crop rectangle is within the bitmap bounds
+        if (captureRect.left < 0) captureRect.left = 0
+        if (captureRect.top < 0) captureRect.top = 0
+        if (captureRect.right > bitmap.width) captureRect.right = bitmap.width
+        if (captureRect.bottom > bitmap.height) captureRect.bottom = bitmap.height
+        if (captureRect.width() <= 0 || captureRect.height() <= 0) {
+            return
+        }
 
         val croppedBitmap = Bitmap.createBitmap(
             bitmap,
@@ -196,14 +254,12 @@ class OverlayService : Service() {
 
         for (i in pixels.indices) {
             val p = pixels[i]
-            val r = p shr 16 and 0xff
-            val g = p shr 8 and 0xff
-            val b = p and 0xff
+            val r = Color.red(p)
+            val g = Color.green(p)
+            val b = Color.blue(p)
 
-            if (r > 200 && g < 100 && b < 100) {
-                // Keep red pixels
-            } else {
-                pixels[i] = 0 // Make other pixels transparent
+            if (!(r > 200 && g < 50 && b < 50)) {
+                pixels[i] = Color.TRANSPARENT
             }
         }
 
@@ -215,34 +271,43 @@ class OverlayService : Service() {
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                for (block in visionText.textBlocks) {
-                    for (line in block.lines) {
-                        for (element in line.elements) {
-                            val elementText = element.text
-                            if (elementText.matches(Regex("\d+"))) {
-                                saveData(elementText)
-                            }
-                        }
-                    }
+                val detectedText = visionText.text.trim().replace(Regex("[^\\\\d]"), "")
+                if (detectedText.isNotEmpty() && detectedText != lastCapturedValue) {
+                    lastCapturedValue = detectedText
+                    saveData(detectedText)
                 }
             }
             .addOnFailureListener { e ->
-                // Handle OCR failure
+                Log.e("OverlayService", "OCR failed", e)
             }
     }
 
     private fun saveData(value: String) {
         val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
-        val csvLine = ""$value","$timestamp"\n"
+        val csvLine = "\"$value\",\"$timestamp\"\n"
 
         try {
-            val file = File(filesDir, "donnees.csv")
+            val file = File(filesDir, "collecte.csv")
             val writer = FileWriter(file, true)
             writer.append(csvLine)
             writer.flush()
             writer.close()
         } catch (e: Exception) {
+            Log.e("OverlayService", "Failed to save data", e)
             e.printStackTrace()
+        }
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Overlay Channel"
+            val descriptionText = "Channel for overlay service notification"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("overlay_channel", name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
     }
 
@@ -250,6 +315,8 @@ class OverlayService : Service() {
         super.onDestroy()
         stopCapture()
         mediaProjection?.stop()
-        windowManager.removeView(overlayView)
+        if (::overlayView.isInitialized) {
+            windowManager.removeView(overlayView)
+        }
     }
 }

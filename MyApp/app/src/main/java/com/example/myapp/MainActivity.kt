@@ -14,6 +14,7 @@ import android.provider.Settings
 import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
                 putExtra("resultCode", result.resultCode)
                 putExtra("data", result.data)
             }
-            startService(intent)
+            ContextCompat.startForegroundService(this, intent)
         }
     }
 

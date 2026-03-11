@@ -1,0 +1,28 @@
+R_DEF: Internal format may change without notice
+local
+color black
+color purple_200
+color purple_500
+color purple_700
+color teal_200
+color teal_700
+color white
+drawable capture_border
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id capture_zone
+id startButton
+id start_stop_button
+layout activity_main
+layout overlay_layout
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string app_notification_channel_description
+string request_permission
+string start_capture
+string start_stop
+string stop
+style Theme.MyApp
+xml backup_rules
+xml data_extraction_rules

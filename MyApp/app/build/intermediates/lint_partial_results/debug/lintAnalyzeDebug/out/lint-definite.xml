@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.5.1" type="incidents">
+
+    <incident
+        id="RedundantLabel"
+        severity="warning"
+        message="Redundant label can be removed">
+        <fix-attribute
+            description="Delete label"
+            namespace="http://schemas.android.com/apk/res/android"
+            attribute="label"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*manifest*0}"
+            line="29"
+            column="13"
+            startOffset="1291"
+            endLine="29"
+            endColumn="45"
+            endOffset="1323"/>
+    </incident>
+
+    <incident
+        id="ObsoleteSdkInt"
+        severity="warning"
+        message="Unnecessary; SDK_INT is always >= 28">
+        <fix-data conditional="true"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/MainActivity.kt"
+            line="66"
+            column="13"
+            startOffset="2343"
+            endLine="66"
+            endColumn="59"
+            endOffset="2389"/>
+    </incident>
+
+    <incident
+        id="SetTextI18n"
+        severity="warning"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="167"
+            column="32"
+            startOffset="5847"
+            endLine="167"
+            endColumn="38"
+            endOffset="5853"/>
+    </incident>
+
+    <incident
+        id="SetTextI18n"
+        severity="warning"
+        message="String literal in `setText` can not be translated. Use Android resources instead.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="167"
+            column="33"
+            startOffset="5848"
+            endLine="167"
+            endColumn="37"
+            endOffset="5852"/>
+    </incident>
+
+    <incident
+        id="SetTextI18n"
+        severity="warning"
+        message="Do not concatenate text displayed with `setText`. Use resource string with placeholders.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="174"
+            column="32"
+            startOffset="6027"
+            endLine="174"
+            endColumn="39"
+            endOffset="6034"/>
+    </incident>
+
+    <incident
+        id="SetTextI18n"
+        severity="warning"
+        message="String literal in `setText` can not be translated. Use Android resources instead.">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="174"
+            column="33"
+            startOffset="6028"
+            endLine="174"
+            endColumn="38"
+            endOffset="6033"/>
+    </incident>
+
+    <incident
+        id="ObsoleteSdkInt"
+        severity="warning"
+        message="Unnecessary; SDK_INT is always >= 28">
+        <fix-data conditional="true"/>
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="302"
+            column="13"
+            startOffset="10536"
+            endLine="302"
+            endColumn="59"
+            endOffset="10582"/>
+    </incident>
+
+    <incident
+        id="OldTargetApi"
+        severity="warning"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details.">
+        <fix-replace
+            description="Update targetSdkVersion to 36"
+            oldString="34"
+            replacement="36"
+            priority="0"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="14"
+            column="9"
+            startOffset="272"
+            endLine="14"
+            endColumn="23"
+            endOffset="286"/>
+    </incident>
+
+    <incident
+        id="UseTomlInstead"
+        severity="warning"
+        message="Use version catalog instead">
+        <fix-composite
+            description="Replace with new library catalog declaration for com-google-android-gms-play-services-mlkit-text-recognition7"
+            robot="true">
+            <fix-replace
+                description="Replace with comGoogleAndroidGmsPlayServicesMlkitTextRecognition6 = &quot;18.0.2&quot;..."
+                robot="true"
+                oldString="_lint_insert_begin_"
+                replacement="comGoogleAndroidGmsPlayServicesMlkitTextRecognition6 = &quot;18.0.2&quot;&#xA;"
+                priority="0">
+                <range
+                    file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+                    startOffset="25"
+                    endOffset="25"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with com-google-android-gms-play-services-mlkit-text-recognition7 = { module = &quot;com.google.android.gms:play-services-mlkit-text-recognition&quot;, version.ref = &quot;comGoogleAndroidGmsPlayServicesMlkitTextRecognition6&quot; }..."
+                robot="true"
+                oldString="_lint_insert_begin_"
+                replacement="com-google-android-gms-play-services-mlkit-text-recognition7 = { module = &quot;com.google.android.gms:play-services-mlkit-text-recognition&quot;, version.ref = &quot;comGoogleAndroidGmsPlayServicesMlkitTextRecognition6&quot; }&#xA;"
+                priority="0">
+                <range
+                    file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+                    startOffset="331"
+                    endOffset="331"/>
+            </fix-replace>
+            <fix-replace
+                description="Replace with libs.com.google.android.gms.play.services.mlkit.text.recognition7"
+                robot="true"
+                replacement="libs.com.google.android.gms.play.services.mlkit.text.recognition7"
+                priority="0">
+                <range
+                    file="${:app*projectDir}/build.gradle.kts"
+                    startOffset="1591"
+                    endOffset="1659"/>
+            </fix-replace>
+        </fix-composite>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="64"
+            column="20"
+            startOffset="1591"
+            endLine="64"
+            endColumn="88"
+            endOffset="1659"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.core:core-ktx than 1.13.0 is available: 1.17.0">
+        <fix-replace
+            description="Change to 1.17.0"
+            family="Update versions"
+            oldString="1.13.0"
+            replacement="1.17.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="4"
+            column="11"
+            startOffset="52"
+            endLine="4"
+            endColumn="19"
+            endOffset="60"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.4 is available: 2.10.0">
+        <fix-replace
+            description="Change to 2.10.0"
+            family="Update versions"
+            oldString="2.8.4"
+            replacement="2.10.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="8"
+            column="23"
+            startOffset="146"
+            endLine="8"
+            endColumn="30"
+            endOffset="153"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.activity:activity-compose than 1.9.1 is available: 1.12.4">
+        <fix-replace
+            description="Change to 1.12.4"
+            family="Update versions"
+            oldString="1.9.1"
+            replacement="1.12.4"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="9"
+            column="19"
+            startOffset="172"
+            endLine="9"
+            endColumn="26"
+            endOffset="179"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.compose:compose-bom than 2024.04.01 is available: 2026.02.01">
+        <fix-replace
+            description="Change to 2026.02.01"
+            family="Update versions"
+            oldString="2024.04.01"
+            replacement="2026.02.01"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="10"
+            column="14"
+            startOffset="193"
+            endLine="10"
+            endColumn="26"
+            endOffset="205"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of androidx.appcompat:appcompat than 1.6.1 is available: 1.7.1">
+        <fix-replace
+            description="Change to 1.7.1"
+            family="Update versions"
+            oldString="1.6.1"
+            replacement="1.7.1"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="11"
+            column="13"
+            startOffset="218"
+            endLine="11"
+            endColumn="20"
+            endOffset="225"/>
+    </incident>
+
+    <incident
+        id="AndroidGradlePluginVersion"
+        severity="warning"
+        message="A newer version of com.android.application than 8.5.1 is available: 9.1.0. (There is also a newer version of 8.5.𝑥 available, if upgrading to 9.1.0 is difficult: 8.5.2)">
+        <fix-alternatives>
+            <fix-replace
+                description="Change to 9.1.0"
+                family="Update versions"
+                oldString="8.5.1"
+                replacement="9.1.0"
+                priority="0"/>
+            <fix-replace
+                description="Change to 8.5.2"
+                family="Update versions"
+                robot="true"
+                independent="true"
+                oldString="8.5.1"
+                replacement="8.5.2"
+                priority="0"/>
+        </fix-alternatives>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="2"
+            column="7"
+            startOffset="17"
+            endLine="2"
+            endColumn="14"
+            endOffset="24"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of org.jetbrains.kotlin.android than 1.9.0 is available: 2.1.0">
+        <fix-replace
+            description="Change to 2.1.0"
+            family="Update versions"
+            oldString="1.9.0"
+            replacement="2.1.0"
+            priority="0"/>
+        <location
+            file="$HOME/myap/MyApp/gradle/libs.versions.toml"
+            line="3"
+            column="10"
+            startOffset="34"
+            endLine="3"
+            endColumn="17"
+            endOffset="41"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of com.google.android.gms:play-services-mlkit-text-recognition than 18.0.2 is available: 19.0.1">
+        <fix-replace
+            description="Change to 19.0.1"
+            family="Update versions"
+            oldString="18.0.2"
+            replacement="19.0.1"
+            priority="0"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="64"
+            column="20"
+            startOffset="1591"
+            endLine="64"
+            endColumn="88"
+            endOffset="1659"/>
+    </incident>
+
+    <incident
+        id="InflateParams"
+        severity="warning"
+        message="Avoid passing `null` as the view root (needed to resolve layout parameters on the inflated layout&apos;s root element)">
+        <location
+            file="${:app*debug*MAIN*sourceProvider*0*javaDir*0}/com/example/myapp/OverlayService.kt"
+            line="107"
+            column="65"
+            startOffset="3585"
+            endLine="107"
+            endColumn="69"
+            endOffset="3589"/>
+    </incident>
+
+</incidents>

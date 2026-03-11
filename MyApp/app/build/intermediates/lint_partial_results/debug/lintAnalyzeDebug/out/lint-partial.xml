@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.5.1" type="partial_results">
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="com.example.myapp.MainActivity"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.drawable.capture_border"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/drawable/capture_border.xml"
+            line="2"
+            column="1"
+            startOffset="39"
+            endLine="8"
+            endColumn="9"
+            endOffset="278"/>
+        <location id="R.color.teal_700"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="7"
+            column="12"
+            startOffset="248"
+            endLine="7"
+            endColumn="27"
+            endOffset="263"/>
+        <location id="R.color.black"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="8"
+            column="12"
+            startOffset="293"
+            endLine="8"
+            endColumn="24"
+            endOffset="305"/>
+        <location id="R.color.white"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="9"
+            column="12"
+            startOffset="335"
+            endLine="9"
+            endColumn="24"
+            endOffset="347"/>
+        <location id="R.color.purple_700"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="5"
+            column="12"
+            startOffset="156"
+            endLine="5"
+            endColumn="29"
+            endOffset="173"/>
+        <location id="R.string.request_permission"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="6"
+            column="13"
+            startOffset="206"
+            endLine="6"
+            endColumn="38"
+            endOffset="231"/>
+        <location id="R.color.purple_500"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="4"
+            column="12"
+            startOffset="109"
+            endLine="4"
+            endColumn="29"
+            endOffset="126"/>
+        <location id="R.string.stop"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="5"
+            column="13"
+            startOffset="168"
+            endLine="5"
+            endColumn="24"
+            endOffset="179"/>
+        <location id="R.color.purple_200"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="3"
+            column="12"
+            startOffset="62"
+            endLine="3"
+            endColumn="29"
+            endOffset="79"/>
+        <location id="R.string.app_notification_channel_description"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/strings.xml"
+            line="7"
+            column="13"
+            startOffset="272"
+            endLine="7"
+            endColumn="56"
+            endOffset="315"/>
+        <entry
+            name="model"
+            string="color[purple_200(D),purple_500(D),purple_700(D),teal_200(D),teal_700(D),black(D),white(D)],drawable[capture_border(D),ic_launcher_background(U),ic_launcher_foreground(U),ic_launcher_foreground_1(R)],id[startButton(U),capture_zone(U),start_stop_button(U)],layout[activity_main(U),overlay_layout(U)],mipmap[ic_launcher(U),ic_launcher_round(U)],string[app_name(U),start_capture(U),start_stop(U),stop(D),request_permission(D),app_notification_channel_description(D)],style[Theme_MyApp(U)],xml[data_extraction_rules(U),backup_rules(U)];9^a,e^13,f^14,10^8^9,11^8^9;;;"/>
+        <location id="R.color.teal_200"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="6"
+            column="12"
+            startOffset="203"
+            endLine="6"
+            endColumn="27"
+            endOffset="218"/>
+    </map>
+
+</incidents>
