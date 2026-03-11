@@ -1,18 +1,25 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#CC000000">
 
+    <!-- Zone de Capture (340dp x 115dp) -->
     <View
         android:id="@+id/capture_zone"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@android:color/transparent" />
+        android:layout_width="340dp"
+        android:layout_height="115dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/capture_border" />
 
+    <!-- Bouton pour démarrer/arrêter la collecte -->
     <Button
-        android:id="@+id/start_stop_button"
+        android:id="@+id/collect_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:text="@string/start_stop" />
+        android:layout_below="@id/capture_zone"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp"
+        android:text="Collecter" />
 
-</FrameLayout>
+</RelativeLayout>

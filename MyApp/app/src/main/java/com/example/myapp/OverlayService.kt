@@ -1,26 +1,24 @@
 package com.example.myapp
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
-import android.content.res.Resources
-import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.PixelFormat
-import android.graphics.Rect
+import android.content.pm.PackageManager
+import android.graphics.*
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.media.Image
 import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.Button
@@ -32,28 +30,35 @@ import java.io.File
 import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.regex.Pattern
 
 class OverlayService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var overlayView: ViewGroup
     private lateinit var captureZone: View
-    private lateinit var startStopButton: Button
+    private lateinit var collectButton: Button
 
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private lateinit var imageReader: ImageReader
     private lateinit var mediaProjectionManager: MediaProjectionManager
 
-    private var isCapturing = false
+    private var isCollecting = false
     private val captureHandler = Handler(Looper.getMainLooper())
-    private var lastCapturedValue: String? = null
 
+    // Expression régulière pour extraire uniquement les chiffres
+    private val numberPattern = Pattern.compile("[0-9]+")
+
+    /**
+     * Tâche répétitive pour la capture et le traitement d'écran.
+     */
     private val captureRunnable = object : Runnable {
         override fun run() {
-            if (isCapturing) {
-                captureScreen()
-                captureHandler.postDelayed(this, 200)
+            if (isCollecting) {
+                captureAndProcessScreen()
+                // Répéter toutes les 500ms
+                captureHandler.postDelayed(this, 500)
             }
         }
     }
@@ -64,57 +69,56 @@ class OverlayService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        mediaProjectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         createNotificationChannel()
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent == null) {
-            return START_NOT_STICKY
-        }
-        if (intent.action == "STOP") {
+        if (intent?.action == "STOP") {
             stopSelf()
             return START_NOT_STICKY
         }
 
-        val resultCode = intent.getIntExtra("resultCode", 0)
-        val data: Intent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra("data", Intent::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra("data")
-        }
+        val resultCode = intent?.getIntExtra("resultCode", Activity.RESULT_CANCELED)
+        val data: Intent? = intent?.getParcelableExtra("data")
 
-        if (data != null) {
-            mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
-        }
-
-        if (mediaProjection == null) {
+        if (resultCode != Activity.RESULT_OK || data == null) {
+            Log.e("OverlayService", "MediaProjection non autorisé")
             stopSelf()
             return START_NOT_STICKY
         }
 
+        mediaProjection = mediaProjectionManager.getMediaProjection(resultCode, data)
+        mediaProjection?.registerCallback(MediaProjectionCallback(), captureHandler)
 
+        setupOverlay()
+        setupVirtualDisplay()
+
+        // Démarrer le service en avant-plan pour éviter qu'il soit tué
         startForeground(1, NotificationCompat.Builder(this, "overlay_channel")
-            .setContentTitle("Overlay Service")
-            .setContentText("Capturing screen.")
+            .setContentTitle("Service de Superposition Actif")
+            .setContentText("L'overlay est visible.")
             .setSmallIcon(R.mipmap.ic_launcher)
             .build())
 
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        return START_STICKY
+    }
+
+    /**
+     * Configure la vue de superposition et l'ajoute au WindowManager.
+     */
+    private fun setupOverlay() {
+        windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val inflater = LayoutInflater.from(this)
         overlayView = inflater.inflate(R.layout.overlay_layout, null) as ViewGroup
-        captureZone = overlayView.findViewById(R.id.capture_zone)
-        startStopButton = overlayView.findViewById(R.id.start_stop_button)
 
-        val metrics = Resources.getSystem().displayMetrics
-        val threeCmInPixels = (3 * metrics.xdpi / 2.54).toInt()
-        val oneCmInPixels = (metrics.xdpi / 2.54).toInt()
+        captureZone = overlayView.findViewById(R.id.capture_zone)
+        collectButton = overlayView.findViewById(R.id.collect_button)
 
         val params = WindowManager.LayoutParams(
-            threeCmInPixels,
-            oneCmInPixels,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
@@ -122,73 +126,23 @@ class OverlayService : Service() {
 
         windowManager.addView(overlayView, params)
 
-        val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            private var initialX = 0
-            private var initialY = 0
-            private var initialTouchX = 0f
-            private var initialTouchY = 0f
-
-            override fun onDown(e: MotionEvent): Boolean {
-                val initialParams = overlayView.layoutParams as WindowManager.LayoutParams
-                initialX = initialParams.x
-                initialY = initialParams.y
-                initialTouchX = e.rawX
-                initialTouchY = e.rawY
-                return true
-            }
-
-            override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                val newParams = overlayView.layoutParams as WindowManager.LayoutParams
-                newParams.x = initialX + (e2.rawX - initialTouchX).toInt()
-                newParams.y = initialY + (e2.rawY - initialTouchY).toInt()
-                windowManager.updateViewLayout(overlayView, newParams)
-                return true
-            }
-        })
-
-        overlayView.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            true
-        }
-
-        startStopButton.setOnClickListener {
-            if (isCapturing) {
-                stopCapture()
+        collectButton.setOnClickListener {
+            if (isCollecting) {
+                stopCollecting()
             } else {
-                startCapture()
+                startCollecting()
             }
         }
-
-        return START_STICKY
     }
 
-    private fun startCapture() {
-        isCapturing = true
-        startStopButton.text = "STOP"
-        setupVirtualDisplay()
-        captureHandler.post(captureRunnable)
-    }
-
-    private fun stopCapture() {
-        isCapturing = false
-        startStopButton.text = "START"
-        captureHandler.removeCallbacks(captureRunnable)
-        virtualDisplay?.release()
-        virtualDisplay = null
-    }
-
+    /**
+     * Configure le VirtualDisplay pour la capture d'écran.
+     */
     private fun setupVirtualDisplay() {
-        val metrics = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            windowManager.currentWindowMetrics.bounds
-        } else {
-            val displayMetrics = DisplayMetrics()
-            @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getMetrics(displayMetrics)
-            Rect(0, 0, displayMetrics.widthPixels, displayMetrics.heightPixels)
-        }
-        val screenWidth = metrics.width()
-        val screenHeight = metrics.height()
-        val screenDensity = resources.displayMetrics.densityDpi
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val screenDensity = displayMetrics.densityDpi
 
         imageReader = ImageReader.newInstance(screenWidth, screenHeight, PixelFormat.RGBA_8888, 2)
         virtualDisplay = mediaProjection?.createVirtualDisplay(
@@ -203,54 +157,80 @@ class OverlayService : Service() {
         )
     }
 
-    private fun captureScreen() {
-        val image = imageReader.acquireLatestImage() ?: return
-        processImage(image)
+    private fun startCollecting() {
+        isCollecting = true
+        collectButton.text = "Arrêter"
+        collectButton.setBackgroundColor(Color.RED)
+        captureHandler.post(captureRunnable)
     }
 
-    private fun processImage(image: Image) {
-        val planes = image.planes
-        val buffer = planes[0].buffer
-        val pixelStride = planes[0].pixelStride
-        val rowStride = planes[0].rowStride
+    private fun stopCollecting() {
+        isCollecting = false
+        collectButton.text = "Collecter"
+        collectButton.setBackgroundColor(Color.GRAY)
+        captureHandler.removeCallbacks(captureRunnable)
+    }
+
+    /**
+     * Capture l'écran, extrait la zone, la filtre et lance l'OCR.
+     */
+    private fun captureAndProcessScreen() {
+        val image = imageReader.acquireLatestImage() ?: return
+        val plane = image.planes[0]
+        val buffer = plane.buffer
+        val pixelStride = plane.pixelStride
+        val rowStride = plane.rowStride
         val rowPadding = rowStride - pixelStride * image.width
-        val bitmap = Bitmap.createBitmap(
+
+        val fullBitmap = Bitmap.createBitmap(
             image.width + rowPadding / pixelStride,
             image.height,
             Bitmap.Config.ARGB_8888
         )
-        bitmap.copyPixelsFromBuffer(buffer)
+        fullBitmap.copyPixelsFromBuffer(buffer)
         image.close()
 
-        val captureRect = Rect()
-        captureZone.getGlobalVisibleRect(captureRect)
+        val captureRect = getCaptureZoneRect()
+        if (captureRect.width() <= 0 || captureRect.height() <= 0) return
 
-        // Ensure crop rectangle is within the bitmap bounds
-        if (captureRect.left < 0) captureRect.left = 0
-        if (captureRect.top < 0) captureRect.top = 0
-        if (captureRect.right > bitmap.width) captureRect.right = bitmap.width
-        if (captureRect.bottom > bitmap.height) captureRect.bottom = bitmap.height
-        if (captureRect.width() <= 0 || captureRect.height() <= 0) {
+        // S'assurer que le rectangle de rognage est dans les limites du bitmap
+        val croppedBitmap = try {
+            Bitmap.createBitmap(fullBitmap, captureRect.left, captureRect.top, captureRect.width(), captureRect.height())
+        } catch (e: IllegalArgumentException) {
+            Log.e("OverlayService", "Erreur de rognage du bitmap", e)
+            fullBitmap.recycle()
             return
         }
+        fullBitmap.recycle()
 
-        val croppedBitmap = Bitmap.createBitmap(
-            bitmap,
-            captureRect.left,
-            captureRect.top,
-            captureRect.width(),
-            captureRect.height()
-        )
-
-        val redFilteredBitmap = filterRedColor(croppedBitmap)
+        val redFilteredBitmap = filterRedAndConvertToBlack(croppedBitmap)
         runOcr(redFilteredBitmap)
     }
+    
+    /**
+     * Calcule la position absolue de la zone de capture sur l'écran.
+     */
+    private fun getCaptureZoneRect(): Rect {
+        val location = IntArray(2)
+        captureZone.getLocationOnScreen(location)
+        return Rect(
+            location[0],
+            location[1],
+            location[0] + captureZone.width,
+            location[1] + captureZone.height
+        )
+    }
 
-    private fun filterRedColor(bitmap: Bitmap): Bitmap {
+    /**
+     * Filtre l'image pour ne garder que les pixels rouges, et les convertit en noir.
+     * Les autres pixels deviennent blancs.
+     */
+    private fun filterRedAndConvertToBlack(bitmap: Bitmap): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        bitmap.recycle()
 
         for (i in pixels.indices) {
             val p = pixels[i]
@@ -258,65 +238,100 @@ class OverlayService : Service() {
             val g = Color.green(p)
             val b = Color.blue(p)
 
-            if (!(r > 200 && g < 50 && b < 50)) {
-                pixels[i] = Color.TRANSPARENT
+            // Seuil pour le rouge (ajustable)
+            if (r > 180 && g < 100 && b < 100) {
+                pixels[i] = Color.BLACK // Pixel rouge devient noir pour l'OCR
+            } else {
+                pixels[i] = Color.WHITE // Le reste devient blanc
             }
         }
 
         return Bitmap.createBitmap(pixels, width, height, Bitmap.Config.ARGB_8888)
     }
 
+    /**
+     * Exécute la reconnaissance de texte sur le bitmap fourni.
+     */
     private fun runOcr(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val detectedText = visionText.text.trim().replace(Regex("[^\\\\d]"), "")
-                if (detectedText.isNotEmpty() && detectedText != lastCapturedValue) {
-                    lastCapturedValue = detectedText
-                    saveData(detectedText)
+                val matcher = numberPattern.matcher(visionText.text)
+                if (matcher.find()) {
+                    val detectedNumber = matcher.group()
+                    Log.d("OverlayService", "Chiffre détecté : $detectedNumber")
+                    saveDataToCsv(detectedNumber)
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("OverlayService", "OCR failed", e)
+                Log.e("OverlayService", "Échec de l'OCR", e)
+            }
+            .addOnCompleteListener {
+                bitmap.recycle() // Libérer la mémoire du bitmap après traitement
             }
     }
 
-    private fun saveData(value: String) {
-        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
-        val csvLine = "\"$value\",\"$timestamp\"\n"
+    /**
+     * Enregistre la valeur extraite dans le fichier CSV.
+     */
+    private fun saveDataToCsv(value: String) {
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            Log.e("OverlayService", "Permission d'écriture refusée.")
+            return
+        }
 
+        val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "donnees_rouges.csv")
         try {
-            val file = File(filesDir, "collecte.csv")
-            val writer = FileWriter(file, true)
-            writer.append(csvLine)
+            val writer = FileWriter(file, true) // true pour ajouter au fichier existant
+            val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+            
+            // Écrire l'en-tête si le fichier est nouveau
+            if (file.length() == 0L) {
+                writer.append("Date;Heure;Valeur_Chiffre\n")
+            }
+            
+            writer.append("$date;$time;$value\n")
             writer.flush()
             writer.close()
         } catch (e: Exception) {
-            Log.e("OverlayService", "Failed to save data", e)
-            e.printStackTrace()
+            Log.e("OverlayService", "Erreur lors de l'écriture du fichier CSV", e)
         }
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Overlay Channel"
-            val descriptionText = "Channel for overlay service notification"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val name = "Canal de Superposition"
+            val descriptionText = "Notifications pour le service de superposition"
+            val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel("overlay_channel", name, importance).apply {
                 description = descriptionText
             }
-            val notificationManager: NotificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        stopCapture()
+        stopCollecting()
+        virtualDisplay?.release()
         mediaProjection?.stop()
         if (::overlayView.isInitialized) {
             windowManager.removeView(overlayView)
+        }
+    }
+
+    /**
+     * Callback pour être notifié lorsque la capture MédiaProjection s'arrête.
+     */
+    private inner class MediaProjectionCallback : MediaProjection.Callback() {
+        override fun onStop() {
+            super.onStop()
+            Log.d("OverlayService", "MediaProjection arrêté")
+            stopSelf()
         }
     }
 }

@@ -1,4 +1,3 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -7,10 +6,10 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/startButton"
+        android:id="@+id/toggle_overlay_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:text="@string/start_capture" />
+        android:text="Activer l'Overlay" />
 
 </RelativeLayout>
